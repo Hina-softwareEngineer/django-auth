@@ -1,15 +1,23 @@
-from rest_framework import serializers
 from django.contrib.auth.models import User
-
 from django.contrib.auth.password_validation import validate_password
+from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 
-class LoginSerializer(serializers.ModelSerializer):
+class LoginSerializer(TokenObtainPairSerializer):
 
-    class Meta:
-        model = User
-        fields = ('username', 'password')
+    @classmethod
+    def get_token(cls, user):
+        token = super(LoginSerializer, cls).get_token(user)
+        token['username'] = user.username
+        return token
+
+    def validate(self, attrs):
+        data = super(LoginSerializer, self).validate(attrs)
+        data.update({'username': self.user.username})
+        data.update({'user_id': self.user.id})
+        return data
 
 
 class RegisterSerializer(serializers.ModelSerializer):
