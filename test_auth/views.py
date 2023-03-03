@@ -1,21 +1,22 @@
-
+from re import L
 
 from django.contrib.auth import authenticate, login
+from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_POST
+from rest_framework import permissions
 from rest_framework.authentication import SessionAuthentication
+from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.generics import CreateAPIView
-from django.contrib.auth.models import User
-from rest_framework import permissions
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from test_auth.serializers import RegisterSerializer
 
 
 @ensure_csrf_cookie
-def set_csrf_token(request):
+def get_csrf_token(request):
     return JsonResponse({'details': 'CSRF cookie set'})
 
 
@@ -23,9 +24,6 @@ def set_csrf_token(request):
 def login_view(request):
     username = request.POST.get('username')
     password = request.POST.get('password')
-    print('================')
-    print(username, password)
-    print("------------> ", request.POST)
 
     if username is None or password is None:
         return JsonResponse(
@@ -53,7 +51,7 @@ class RegisterAPIView(CreateAPIView):
 
         print(user)
 
-        return Response({'status': 'success'})
+        return Response({'status': 'success', 'message' : 'User created successfully'})
 
         # token = RefreshToken.for_user(user)
         # token['username'] = user.username
@@ -70,8 +68,21 @@ class RegisterAPIView(CreateAPIView):
         # )
 
 class TestAuth(APIView):
+    authentication_classes = [SessionAuthentication, JWTAuthentication]
+
+    def get(self, request):
+        return Response({'detail': 'You are authenticated via any one of methods'})
+
+
+class TestAuthJWT(APIView):
+    authentication_classes = [JWTAuthentication]
+
+    def get(self, request):
+        return Response({'detail': 'You are authenticated via CSRF', 'user': request.user.username})
+
+
+class TestAuthCSRF(APIView):
     authentication_classes = [SessionAuthentication]
 
     def get(self, request):
-        print('request:user:--->', request.user)
-        return Response({'detail': 'You are authenticated'})
+        return Response({'detail': 'You are authenticated via JWT', 'user': request.user})
